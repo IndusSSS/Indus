@@ -30,20 +30,23 @@ def create_app() -> FastAPI:
     # ─────────────────── Startup tasks ──────────────────── #
     @application.on_event("startup")
     def _startup() -> None:
-        # 1) Create tables (idempotent)
-        SQLModel.metadata.create_all(engine)
+        # 1) Create tables (idempotent) - only if database is available
+        if engine is not None:
+            SQLModel.metadata.create_all(engine)
 
-        # 2) Seed one admin user if table is empty
-        with Session(engine) as session:
-            user_exists = session.exec(select(User)).first()
-            if not user_exists:
-                admin = User(
-                    username="admin",
-                    email="admin@example.com",
-                    hashed_password=hash_password("admin123"),
-                )
-                session.add(admin)
-                session.commit()
+            # 2) Seed one admin user if table is empty
+            with Session(engine) as session:
+                user_exists = session.exec(select(User)).first()
+                if not user_exists:
+                    admin = User(
+                        username="admin",
+                        email="admin@example.com",
+                        hashed_password=hash_password("admin123"),
+                    )
+                    session.add(admin)
+                    session.commit()
+        else:
+            print("Warning: Database not configured, skipping startup tasks")
 
     # ─────────────────── Health check ───────────────────── #
     @application.get(f"{settings.API_PREFIX}/health", tags=["health"])

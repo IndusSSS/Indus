@@ -1,2 +1,5 @@
-description: "Top-level MESS: Modular · Empirical · Secure · Scalable"
-globs: ["**/*"]
+# .cursor/rules
+description: |
+  See .cursor/instructions.md for MESS-driven mono-repo prompt rules.
+globs:
+  - "**/*"

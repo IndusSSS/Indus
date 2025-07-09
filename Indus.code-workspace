@@ -1,0 +1,14 @@
+{
+  "folders": [
+    { "path": "root-app" },
+    { "path": "client-app" },
+    { "path": "cloud" },
+    { "path": "contracts" },
+    { "path": "devops/compose" }
+  ],
+  "settings": {
+    // Example: disable telemetry for this workspace
+    "telemetry.enableCrashReporter": false,
+    "telemetry.enableTelemetry": false
+  }
+}

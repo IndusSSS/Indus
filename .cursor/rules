@@ -1,0 +1,2 @@
+description: "Top-level MESS: Modular · Empirical · Secure · Scalable"
+globs: ["**/*"]

@@ -1,0 +1,53 @@
+openapi: 3.0.3
+info:
+  title: Health Beacon API
+  version: 1.0.0
+paths:
+  /api/root/v1/health:
+    post:
+      summary: Upload health beacon sample
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    HealthRequest:
+      type: object
+      required:
+        - deviceId
+        - timestamp
+        - batteryPercent
+        - lteRssi
+        - wifiRssi
+      properties:
+        deviceId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        batteryPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lteRssi:
+          type: integer
+        wifiRssi:
+          type: integer
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ok] 

@@ -8,12 +8,15 @@ Data ingestion endpoints.
 """
 
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.models.sensor import Sensor
 from app.models.device import Device
+from sqlmodel import select
+from uuid import UUID
+from datetime import datetime
 
 router = APIRouter()
 
@@ -28,8 +31,6 @@ async def ingest_sensor_data(
     session: AsyncSession = Depends(get_session)
 ) -> Any:
     """Ingest sensor data from IoT devices."""
-    from sqlmodel import select
-    from uuid import UUID
     
     try:
         device_uuid = UUID(device_id)
@@ -118,3 +119,38 @@ async def get_device_sensors(
         }
         for sensor in sensors
     ]
+
+
+@router.post("/root/v1/health")
+async def post_health_beacon(
+    body: dict = Body(...),
+    session: AsyncSession = Depends(get_session)
+) -> Any:
+    """Accept health beacon data from root-app and store as sensor readings."""
+    # Validate required fields
+    required = ["deviceId", "timestamp", "batteryPercent", "lteRssi", "wifiRssi"]
+    for field in required:
+        if body.get(field) is None:
+            raise HTTPException(status_code=400, detail=f"Missing field: {field}")
+    try:
+        device_uuid = UUID(body["deviceId"])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid deviceId format")
+    # Check device exists and is active
+    result = await session.exec(select(Device).where(Device.id == device_uuid))
+    device = result.first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    if not device.is_active:
+        raise HTTPException(status_code=400, detail="Device is not active")
+    # Store each health metric as a sensor reading
+    now = datetime.utcnow()
+    readings = [
+        Sensor(device_id=device_uuid, sensor_type="battery", value=body.get("batteryPercent"), unit="%", timestamp=now),
+        Sensor(device_id=device_uuid, sensor_type="lteRssi", value=body.get("lteRssi"), unit="dBm", timestamp=now),
+        Sensor(device_id=device_uuid, sensor_type="wifiRssi", value=body.get("wifiRssi"), unit="dBm", timestamp=now),
+    ]
+    for sensor in readings:
+        session.add(sensor)
+    await session.commit()
+    return {"status": "ok"}
